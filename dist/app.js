@@ -29,7 +29,7 @@ function language(){
   $$('[data-en]').forEach(el=>el.textContent=el.dataset[lang]);
   $('#language').textContent=lang==='en'?'HE':'EN';
   $('#language').setAttribute('aria-label',t('Switch to Hebrew','החלפה לאנגלית'));
-  document.title=t('770labs — From what if. To what’s next.','770labs — מרעיון ראשוני. למוצר שמוביל קדימה.');
+  document.title=t('770labs — From what if. To what’s next.','770labs — מהרעיון בראש. למוצר שעובד.');
   $$('[data-close]').forEach(el=>el.setAttribute('aria-label',t('Close dialog','סגירת חלון')));
   $('.menu-toggle').setAttribute('aria-label',t('Toggle navigation','פתיחה וסגירת תפריט'));
   $('.next-project .round-button').setAttribute('aria-label',t('Start a project','מתחילים פרויקט'));
