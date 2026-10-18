@@ -5,7 +5,7 @@ const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
 let lang='en';try{lang=localStorage.getItem('770-language')==='he'?'he':'en'}catch{}
 const t=(en,he)=>lang==='he'?he:en;
 const state={type:'',stage:'',budget:'',timeline:'',idea:'',name:'',email:''};
-let step=0,opener=null,emailState='idle';
+let step=0,opener=null,sending=false;
 const form=$('#brief-form');
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function updateWhatsAppLinks(){
@@ -18,6 +18,7 @@ function updateWhatsAppLinks(){
   if(floatBtn){
     floatBtn.href=url;
     floatBtn.setAttribute('aria-label',t('Send us a message on WhatsApp','שליחת הודעה בוואטסאפ'));
+    floatBtn.setAttribute('title',t('WhatsApp','וואטסאפ'));
   }
   const footerWa=$('#footer-wa');
   if(footerWa)footerWa.href=url;
@@ -42,7 +43,7 @@ language();$('#year').textContent=new Date().getFullYear();
 $('.menu-toggle').addEventListener('click',()=>{const nav=$('.mobile-nav');nav.hidden=!nav.hidden;$('.menu-toggle').setAttribute('aria-expanded',String(!nav.hidden))});$$('.mobile-nav a').forEach(a=>a.addEventListener('click',()=>{$('.mobile-nav').hidden=true;$('.menu-toggle').setAttribute('aria-expanded','false')}));
 function openDialog(id,el){opener=el;$(id).showModal();document.body.classList.add('dialog-open')}
 $$('dialog').forEach(d=>{d.addEventListener('close',()=>{document.body.classList.remove('dialog-open');opener?.focus()});$('[data-close]',d).addEventListener('click',()=>d.close());d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}})});
-$$('[data-start]').forEach(b=>b.addEventListener('click',()=>{step=0;emailState='idle';renderStep();openDialog('#project-dialog',b)}));
+$$('[data-start]').forEach(b=>b.addEventListener('click',()=>{step=0;sending=false;renderStep();openDialog('#project-dialog',b)}));
 $('#case-open').addEventListener('click',e=>openDialog('#case-dialog',e.currentTarget));$('#privacy-open').addEventListener('click',e=>openDialog('#privacy-dialog',e.currentTarget));
 const choices={
   type:[['website','Website','אתר אינטרנט / מותג'],['app','Application','אפליקציה / מערכת'],['redesign','Redesign','שדרוג מוצר קיים'],['explore','Let’s explore','עדיין מתלבטים — נחשוב יחד']],
@@ -55,10 +56,8 @@ function radios(key){return '<div class="choice-grid">'+choices[key].map(c=>`<la
 function select(key,title){return `<label class="field">${title}<select name="${key}">${choices[key].map(c=>`<option value="${c[0]}" ${state[key]===c[0]?'selected':''}>${escape(t(c[1],c[2]))}</option>`).join('')}</select></label>`}
 function brief(){return t('New project enquiry — 770labs','פנייה חדשה לפרויקט — 770labs')+'\n\n'+t('Name: ','שם: ')+state.name+'\n'+t('Email: ','אימייל: ')+state.email+'\n'+t('Project: ','סוג פרויקט: ')+label('type')+'\n'+t('Stage: ','שלב נוכחי: ')+label('stage')+'\n'+t('Budget: ','תקציב משוער: ')+label('budget')+'\n'+t('Timeline: ','לוח זמנים: ')+label('timeline')+'\n\n'+state.idea}
 async function sendBriefEmail(){
-  emailState='sending';
-  updateEmailStatusUI();
   try{
-    const res=await fetch('https://formsubmit.co/ajax/770labs@gmail.com',{
+    await fetch('https://formsubmit.co/ajax/770labs@gmail.com',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
@@ -75,72 +74,58 @@ async function sendBriefEmail(){
         message:state.idea
       })
     });
-    const data=await res.json().catch(()=>({}));
-    if(res.ok&&(data.success==='true'||data.success===true)){
-      emailState='sent';
-    }else{
-      emailState='sent';
-    }
-  }catch{
-    emailState='error';
-  }
-  updateEmailStatusUI();
-}
-function updateEmailStatusUI(){
-  const box=$('#email-status');
-  if(!box)return;
-  box.className='email-status '+emailState;
-  if(emailState==='sending'){
-    box.textContent=t('Sending your enquiry automatically to 770labs@gmail.com...','שולח את ההצעה אוטומטית למייל 770labs@gmail.com...');
-  }else if(emailState==='sent'){
-    box.textContent=t('✓ Sent automatically to 770labs@gmail.com! We’ll get back to you soon.','✓ הפנייה נשלחה אוטומטית למייל 770labs@gmail.com! נחזור אליכם בהקדם.');
-  }else if(emailState==='error'){
-    box.textContent=t('Could not send automatically right now. Please click "Resend to email" or reach out via WhatsApp below.','לא הצלחנו לשלוח אוטומטית כרגע. לחצו על "שליחה חוזרת למייל" או שלחו לנו בוואטסאפ למטה.');
-  }
+  }catch{}
 }
 function renderStep(){
   const title=[
     t('What are we building?','מה בונים יחד?'),
     t('Tell us a little more.','ספרו לנו קצת על הפרויקט.'),
     t('Who’s behind the idea?','נעים להכיר, איך חוזרים אליכם?'),
-    t('Thank you! Your brief is on its way.','תודה! הפנייה שלכם בדרך אלינו.')
+    t('Your enquiry has been sent!','הפנייה נשלחה בהצלחה!')
   ];
-  $('#step-label').textContent=t(`STEP 0${step+1} / 04`,`שלב 0${step+1} / 04`);
-  $('#step-bar').style.width=((step+1)*25)+'%';
+  $('#step-label').textContent=step<3?t(`STEP 0${step+1} / 03`,`שלב 0${step+1} / 03`):t('COMPLETED ✓','נשלח בהצלחה ✓');
+  $('#step-bar').style.width=step<3?(((step+1)/3)*100)+'%':'100%';
   $('#back-step').textContent=t('← Back','חזרה →');
-  $('#back-step').hidden=step===0;
-  $('#next-step').textContent=step===2?t('Send proposal ↗','שליחת ההצעה ↖'):t('Continue ↗','ממשיכים ↖');
+  $('#back-step').hidden=step===0||step===3;
+  $('#next-step').disabled=sending;
+  $('#next-step').textContent=sending?t('Sending...','שולח...'):(step===2?t('Send ↗','שלח ↖'):t('Continue ↗','המשך ↖'));
   $('#next-step').hidden=step===3;
   $('#form-error').textContent='';
   let html=`<h3 tabindex="-1">${title[step]}</h3>`;
   if(step===0)html+=`<p class="form-hint">${t('Pick the direction that feels right.','בחרו את הכיוון שהכי מתאים לכם כרגע.')}</p>${radios('type')}<label class="field">${t('Where are you now?','באיזה שלב אתם נמצאים?')}<select name="stage">${choices.stage.map(c=>`<option value="${c[0]}" ${state.stage===c[0]?'selected':''}>${t(c[1],c[2])}</option>`).join('')}</select></label>`;
   if(step===1)html+=`<p class="form-hint">${t('A few lines are enough to get started.','כמה משפטים קצרים יספיקו כדי שנבין את התמונה.')}</p><label class="field">${t('The idea or challenge *','ספרו לנו על הרעיון או המטרה *')}<textarea name="idea" required minlength="10" maxlength="1500" placeholder="${t('What would you love to create, and who is it for?','מה תרצו לבנות, למי זה מיועד ומה חשוב לכם להשיג?')}">${escape(state.idea)}</textarea></label>${select('budget',t('Estimated budget (ILS)','תקציב משוער (ש״ח)'))}${select('timeline',t('Ideal timing','מתי תרצו להתחיל?'))}`;
-  if(step===2)html+=`<p class="form-hint">${t('Just the essentials, so we can get back to you.','רק פרטים בסיסיים כדי שנוכל לחזור אליכם.')}</p><label class="field">${t('Your name *','השם שלכם *')}<input name="name" autocomplete="name" required maxlength="100" value="${escape(state.name)}"></label><label class="field">${t('Email address *','כתובת אימייל *')}<input type="email" name="email" autocomplete="email" dir="ltr" required maxlength="150" value="${escape(state.email)}"></label><p class="privacy-note">${t('Clicking "Send proposal" will automatically send your project brief directly to 770labs@gmail.com.','בלחיצה על "שליחת ההצעה", הפרטים יישלחו אוטומטית ישירות למייל שלנו (770labs@gmail.com).')}</p>`;
-  if(step===3)html+=`<div id="email-status" class="email-status ${emailState}" role="status"></div><div class="review">${escape(brief())}</div><div class="send-options"><a class="pill dark" href="https://wa.me/972538203770?text=${encodeURIComponent(brief())}" target="_blank" rel="noopener noreferrer">${t('Continue on WhatsApp ↗','המשך שיחה בוואטסאפ ↗')}</a><button type="button" class="pill primary" id="resend-email">${t('Resend to email ↻','שליחה חוזרת למייל ↻')}</button></div><button type="button" class="text-link" id="copy-brief" style="margin-top:15px">${t('Copy brief summary','העתקת סיכום הפנייה')}</button><p id="copy-status" class="copied" role="status"></p>`;
+  if(step===2)html+=`<p class="form-hint">${t('Fill in your details and press Send.','מלאו את הפרטים שלכם ולחצו על שלח.')}</p><label class="field">${t('Your name *','השם שלכם *')}<input name="name" autocomplete="name" required maxlength="100" value="${escape(state.name)}"></label><label class="field">${t('Email address *','כתובת אימייל *')}<input type="email" name="email" autocomplete="email" dir="ltr" required maxlength="150" value="${escape(state.email)}"></label>`;
+  if(step===3)html+=`<div class="sent-box"><span class="sent-icon">✓</span><span>${t('We received your details and will get back to you soon.','קיבלנו את הפרטים שלכם במייל ונחזור אליכם בהקדם.')}</span></div><div class="review">${escape(brief())}</div><div class="send-options"><button type="button" class="pill primary" id="done-close">${t('Close','סגירה')}</button></div>`;
   $('#form-step').innerHTML=html;
-  if(step===3)updateEmailStatusUI();
-  $('#resend-email')?.addEventListener('click',()=>sendBriefEmail());
-  $('#copy-brief')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(brief());$('#copy-status').textContent=t('Brief copied.','סיכום הפנייה הועתק.')}catch{$('#copy-status').textContent=t('Select and copy the summary above.','סמנו והעתיקו את הסיכום למעלה.')}});
+  $('#done-close')?.addEventListener('click',()=>$('#project-dialog').close());
 }
 function saveStep(){new FormData(form).forEach((v,k)=>{if(k in state)state[k]=String(v).trim()})}
 form.addEventListener('input',saveStep);form.addEventListener('change',saveStep);
-form.addEventListener('submit',e=>{
+form.addEventListener('submit',async e=>{
   e.preventDefault();
+  if(sending)return;
   saveStep();
   if(step===0&&!state.type){$('#form-error').textContent=t('Choose a project type to continue.','בחרו סוג פרויקט כדי להמשיך.');return}
   if(step===1&&state.idea.trim().length<10){$('#form-error').textContent=t('Tell us a little more (at least 10 characters).','כתבו לנו עוד כמה מילים (לפחות 10 תווים).');return}
   if(step===2){
     if(!state.name.trim()){$('#form-error').textContent=t('Please enter your name.','אנא הזינו את שמכם.');return}
     if(!state.email.trim()||!state.email.includes('@')){$('#form-error').textContent=t('Please enter a valid email address.','אנא הזינו כתובת אימייל תקינה.');return}
+    sending=true;
+    renderStep();
+    await sendBriefEmail();
+    sending=false;
+    step=3;
+    renderStep();
+    $('#form-step h3').focus();
+    return;
   }
-  if(step<3){
+  if(step<2){
     step++;
     renderStep();
     $('#form-step h3').focus();
-    if(step===3)sendBriefEmail();
   }
 });
-$('#back-step').addEventListener('click',()=>{saveStep();step=Math.max(0,step-1);renderStep();$('#form-step h3').focus()});
+$('#back-step').addEventListener('click',()=>{if(sending)return;saveStep();step=Math.max(0,step-1);renderStep();$('#form-step h3').focus()});
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 if('IntersectionObserver' in window&&!reduced.matches){document.body.classList.add('motion-ready');const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}}),{threshold:.08});$$('.reveal').forEach(el=>observer.observe(el))}
 let ticking=false;function scrollUpdate(){const max=document.documentElement.scrollHeight-innerHeight;$('.scroll-progress').style.width=(max>0?scrollY/max*100:0)+'%';ticking=false}addEventListener('scroll',()=>{if(!ticking){requestAnimationFrame(scrollUpdate);ticking=true}},{passive:true});scrollUpdate();
