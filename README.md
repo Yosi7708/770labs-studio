@@ -18,7 +18,7 @@ Publish the contents of `dist/` on any static host. All asset URLs are relative,
 
 ## Contact flow
 
-The brief is held in page memory, not submitted to a backend. The final step opens a prepared WhatsApp message to +972538203770 or an email draft to 770labs@gmail.com. The visitor explicitly sends in their chosen app. No false success state. Clipboard fallback included. Change these destinations in `dist/index.html` and `dist/app.js` if needed.
+Submitting the four-step project brief automatically sends the enquiry to `770labs@gmail.com` (via FormSubmit AJAX) and offers a one-click option to continue the conversation on WhatsApp (`+972538203770`). A floating WhatsApp button in the bottom corner opens a pre-filled WhatsApp message tailored to the active display language (Hebrew or English). Change these destinations in `dist/index.html` and `dist/app.js` if needed.
 
 ## Content and identity
 

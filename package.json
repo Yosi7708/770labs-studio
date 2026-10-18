@@ -1,1 +1,1 @@
-{"name":"770labs-studio","version":"1.0.0","private":true,"description":"Bilingual 770labs digital product studio website","scripts":{"start":"node server.mjs","check":"node --check dist/app.js"}}
+{"name":"770labs-studio","version":"2.0.0","private":true,"description":"Bilingual 770labs digital product studio website","scripts":{"start":"node server.mjs","check":"node --check dist/app.js"}}
